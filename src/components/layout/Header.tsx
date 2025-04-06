@@ -1,95 +1,113 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Image, History, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { MoonIcon, SunIcon, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useTheme } from "@/components/layout/theme-provider";
 
 export function Header() {
+  const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  const isMobile = useIsMobile();
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  const navItems = [
-    { name: "Generate", path: "/", icon: <Image className="h-4 w-4 mr-2" /> },
-    { name: "History", path: "/history", icon: <History className="h-4 w-4 mr-2" /> },
-    { name: "Settings", path: "/settings", icon: <Settings className="h-4 w-4 mr-2" /> },
-  ];
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
-    <header className="w-full bg-background border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <Image className="h-6 w-6 mr-2 text-primary" />
-              <span className="text-xl font-semibold">Prompt Generator</span>
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? "bg-background/80 backdrop-blur-md shadow-sm" : "bg-transparent"
+      }`}
+    >
+      <div className="container px-4 mx-auto">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="text-xl font-bold">
+            Photo Portfolio
+          </Link>
+
+          {/* Mobile menu button */}
+          <button
+            className="p-2 md:hidden"
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          {/* Desktop navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/" className="hover:text-primary transition-colors">
+              Gallery
             </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          {!isMobile && (
-            <nav className="hidden md:flex space-x-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    location.pathname === item.path
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  {item.icon}
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          )}
-
-          {/* Mobile Menu Button */}
-          {isMobile && (
+            <Link to="/albums" className="hover:text-primary transition-colors">
+              Albums
+            </Link>
+            <Link to="/about" className="hover:text-primary transition-colors">
+              About
+            </Link>
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
-              onClick={toggleMenu}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
             >
-              {isMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {theme === "dark" ? <SunIcon size={20} /> : <MoonIcon size={20} />}
             </Button>
-          )}
+          </nav>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      {isMobile && isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-b border-border">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-base font-medium",
-                  location.pathname === item.path
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {item.icon}
-                {item.name}
-              </Link>
-            ))}
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-background/95 backdrop-blur-md">
+          <div className="container px-4 mx-auto py-4 flex flex-col space-y-4">
+            <Link
+              to="/"
+              className="py-2 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Gallery
+            </Link>
+            <Link
+              to="/albums"
+              className="py-2 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Albums
+            </Link>
+            <Link
+              to="/about"
+              className="py-2 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              About
+            </Link>
+            <Button
+              variant="ghost"
+              className="justify-start px-0"
+              onClick={() => {
+                setTheme(theme === "dark" ? "light" : "dark");
+              }}
+            >
+              {theme === "dark" ? (
+                <>
+                  <SunIcon size={20} className="mr-2" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <MoonIcon size={20} className="mr-2" />
+                  Dark Mode
+                </>
+              )}
+            </Button>
           </div>
         </div>
       )}

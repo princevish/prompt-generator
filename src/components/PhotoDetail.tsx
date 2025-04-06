@@ -1,70 +1,110 @@
 import { useState } from "react";
-import { format } from "date-fns";
-import { ArrowLeft, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Share2, Download, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Schema } from "@/lib/db-types";
 import { Link } from "react-router-dom";
-import type { Schema } from "@/lib/db-types";
 
 interface PhotoDetailProps {
-  photo: Schema["photos"];
+  photo: Schema["photos"] & { id: number };
+  tags?: { id: number; name: string }[];
+  albumTitle?: string;
+  albumId?: number;
 }
 
-export function PhotoDetail({ photo }: PhotoDetailProps) {
-  const [isLoading, setIsLoading] = useState(true);
+export function PhotoDetail({ photo, tags = [], albumTitle, albumId }: PhotoDetailProps) {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   
-  let formattedDate;
-  try {
-    formattedDate = format(new Date(photo.date), "MMMM d, yyyy");
-  } catch (error) {
-    formattedDate = photo.date;
-  }
+  const formattedDate = new Date(photo.date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container px-4 mx-auto py-8 mt-16">
+      <div className="mb-6 flex items-center justify-between">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/gallery" className="flex items-center">
+          <Link to="/" className="flex items-center">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Gallery
           </Link>
         </Button>
-      </div>
-      
-      <div className="relative">
-        {isLoading && (
-          <Skeleton className="w-full aspect-[16/9] md:aspect-[3/2] rounded-lg" />
-        )}
-        <img
-          src={photo.imageUrl}
-          alt={photo.title}
-          className={cn(
-            "w-full rounded-lg object-cover",
-            isLoading ? "hidden" : "block"
-          )}
-          style={{ maxHeight: "70vh" }}
-          onLoad={() => setIsLoading(false)}
-        />
-      </div>
-      
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">{photo.title}</h1>
         
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="mr-1 h-4 w-4" />
-            {formattedDate}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Tag className="mr-1 h-4 w-4" />
-            {photo.category}
+        <div className="flex space-x-2">
+          <Button variant="outline" size="icon">
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 relative bg-muted/30 rounded-lg overflow-hidden">
+          {!isImageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            </div>
+          )}
+          <img
+            src={photo.imageUrl}
+            alt={photo.title}
+            className={`w-full h-auto rounded-lg ${isImageLoaded ? "opacity-100" : "opacity-0"}`}
+            onLoad={() => setIsImageLoaded(true)}
+          />
+        </div>
+
+        <div>
+          <h1 className="text-3xl font-bold mb-4">{photo.title}</h1>
+          
+          <div className="space-y-6">
+            {photo.description && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">Description</h3>
+                <p className="text-muted-foreground">{photo.description}</p>
+              </div>
+            )}
+            
+            <div>
+              <h3 className="text-lg font-medium mb-2">Details</h3>
+              <dl className="space-y-2">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Date</dt>
+                  <dd>{formattedDate}</dd>
+                </div>
+                
+                {albumTitle && (
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Album</dt>
+                    <dd>
+                      <Link to={`/albums/${albumId}`} className="text-primary hover:underline">
+                        {albumTitle}
+                      </Link>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+            
+            {tags.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-2 flex items-center">
+                  <Tag className="mr-2 h-4 w-4" />
+                  Tags
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag.id} variant="secondary">
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        
-        {photo.description && (
-          <p className="text-muted-foreground">{photo.description}</p>
-        )}
       </div>
     </div>
   );

@@ -1,51 +1,57 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PhotoCard } from "@/components/PhotoCard";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { Schema } from "@/lib/db-types";
+import { Schema } from "@/lib/db-types";
+
+type Photo = Schema["photos"] & { id: number };
 
 interface PhotoGridProps {
-  photos: Schema["photos"][];
-  category?: string;
-  loading?: boolean;
+  photos: Photo[];
+  albumId?: number;
+  tagId?: number;
 }
 
-export function PhotoGrid({ photos, category, loading = false }: PhotoGridProps) {
-  const [filteredPhotos, setFilteredPhotos] = useState<Schema["photos"][]>([]);
+export function PhotoGrid({ photos, albumId, tagId }: PhotoGridProps) {
+  const [columns, setColumns] = useState(getColumnCount());
+
+  function getColumnCount() {
+    if (typeof window === "undefined") return 3;
+    if (window.innerWidth < 640) return 1;
+    if (window.innerWidth < 768) return 2;
+    if (window.innerWidth < 1024) return 3;
+    return 4;
+  }
 
   useEffect(() => {
-    if (category && category !== "all") {
-      setFilteredPhotos(photos.filter(photo => photo.category === category));
-    } else {
-      setFilteredPhotos(photos);
-    }
-  }, [photos, category]);
+    const handleResize = () => {
+      setColumns(getColumnCount());
+    };
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="space-y-3">
-            <Skeleton className="aspect-square w-full rounded-lg" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  if (filteredPhotos.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No photos found in this category.</p>
-      </div>
-    );
-  }
+  // Distribute photos into columns for masonry layout
+  const photoColumns = Array.from({ length: columns }, () => [] as Photo[]);
+  
+  photos.forEach((photo, index) => {
+    const columnIndex = index % columns;
+    photoColumns[columnIndex].push(photo);
+  });
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-      {filteredPhotos.map((photo) => (
-        <PhotoCard key={photo.id} photo={photo} />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {photoColumns.map((columnPhotos, columnIndex) => (
+        <div key={columnIndex} className="flex flex-col gap-4">
+          {columnPhotos.map((photo) => (
+            <PhotoCard
+              key={photo.id}
+              id={photo.id}
+              title={photo.title}
+              imageUrl={photo.imageUrl}
+              aspectRatio={Math.random() * 0.5 + 0.5} // Random aspect ratio between 0.5 and 1
+            />
+          ))}
+        </div>
       ))}
     </div>
   );

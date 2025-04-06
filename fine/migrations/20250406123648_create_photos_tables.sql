@@ -1,0 +1,29 @@
+CREATE TABLE albums (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  coverImageId INTEGER
+);
+
+CREATE TABLE photos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  imageUrl TEXT NOT NULL,
+  date TEXT NOT NULL,
+  albumId INTEGER,
+  FOREIGN KEY (albumId) REFERENCES albums(id)
+);
+
+CREATE TABLE tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE photo_tags (
+  photoId INTEGER NOT NULL,
+  tagId INTEGER NOT NULL,
+  PRIMARY KEY (photoId, tagId),
+  FOREIGN KEY (photoId) REFERENCES photos(id) ON DELETE CASCADE,
+  FOREIGN KEY (tagId) REFERENCES tags(id) ON DELETE CASCADE
+);

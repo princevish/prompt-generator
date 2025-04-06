@@ -1,25 +1,24 @@
 export type Schema = {
+  albums: {
+    id?: number;
+    title: string;
+    description?: string | null;
+    coverImageId?: number | null;
+  };
   photos: {
     id?: number;
     title: string;
-    description: string | null;
+    description?: string | null;
     imageUrl: string;
-    category: string;
     date: string;
-    featured?: boolean;
+    albumId?: number | null;
   };
-  
-  categories: {
+  tags: {
     id?: number;
     name: string;
-    description: string | null;
   };
-  
-  contacts: {
-    id?: number;
-    name: string;
-    email: string;
-    message: string;
-    date: string;
+  photo_tags: {
+    photoId: number;
+    tagId: number;
   };
-}
+};

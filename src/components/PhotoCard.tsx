@@ -2,48 +2,50 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Schema } from "@/lib/db-types";
 
 interface PhotoCardProps {
-  photo: Schema["photos"];
-  aspectRatio?: "portrait" | "square" | "video";
-  width?: number;
-  height?: number;
+  id: number;
+  title: string;
+  imageUrl: string;
+  aspectRatio?: number;
+  className?: string;
 }
 
-export function PhotoCard({
-  photo,
-  aspectRatio = "square",
-  width,
-  height,
-}: PhotoCardProps) {
-  const [isLoading, setIsLoading] = useState(true);
+export function PhotoCard({ id, title, imageUrl, aspectRatio = 1, className }: PhotoCardProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
 
   return (
-    <Link to={`/photo/${photo.id}`}>
-      <Card className="overflow-hidden bg-transparent border-0 rounded-lg transition-all duration-300 hover:shadow-lg">
-        <CardContent className="p-0">
-          <div
-            className={cn(
-              "overflow-hidden rounded-lg",
-              aspectRatio === "portrait" ? "aspect-[3/4]" : "aspect-square"
-            )}
+    <Link to={`/photo/${id}`}>
+      <Card 
+        className={cn(
+          "overflow-hidden transition-all duration-300 hover:shadow-lg group",
+          className
+        )}
+      >
+        <CardContent className="p-0 relative">
+          <div 
+            className="w-full h-0 bg-muted/30" 
+            style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}
           >
+            {!isLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+              </div>
+            )}
             <img
-              src={photo.imageUrl}
-              alt={photo.title}
-              width={width}
-              height={height}
+              src={imageUrl}
+              alt={title}
               className={cn(
-                "h-full w-full object-cover transition-all duration-300 hover:scale-105",
-                isLoading ? "blur-sm" : "blur-0"
+                "absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105",
+                isLoaded ? "opacity-100" : "opacity-0"
               )}
-              onLoad={() => setIsLoading(false)}
+              onLoad={() => setIsLoaded(true)}
             />
-          </div>
-          <div className="p-3">
-            <h3 className="font-medium text-sm truncate">{photo.title}</h3>
-            <p className="text-xs text-muted-foreground">{photo.category}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+              <div className="p-4 w-full">
+                <h3 className="text-white font-medium truncate">{title}</h3>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
