@@ -7,11 +7,13 @@ import { ArrowLeft, Save, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const Result = () => {
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [apiKeySet, setApiKeySet] = useState(true);
+  const [usedModel, setUsedModel] = useState<"gemini" | "llama3">("gemini");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,7 +23,16 @@ const Result = () => {
     if (storedSettings) {
       try {
         const parsedSettings = JSON.parse(storedSettings);
-        setApiKeySet(!!parsedSettings.apiKey);
+        const model = parsedSettings.model || "gemini";
+        
+        // Check if the required API key for the selected model is set
+        if (model === "gemini") {
+          setApiKeySet(!!parsedSettings.apiKey);
+        } else if (model === "llama3") {
+          setApiKeySet(!!parsedSettings.llama3ApiKey);
+        } else {
+          setApiKeySet(!!parsedSettings.apiKey); // Default to Gemini
+        }
       } catch (error) {
         console.error("Error parsing settings:", error);
         setApiKeySet(false);
@@ -33,6 +44,7 @@ const Result = () => {
     // Get the generated prompt and image from session storage
     const storedPrompt = sessionStorage.getItem("generatedPrompt");
     const storedImage = sessionStorage.getItem("selectedImage");
+    const storedModel = sessionStorage.getItem("usedModel") as "gemini" | "llama3" || "gemini";
     
     if (!storedPrompt || !storedImage) {
       // If no data is found, redirect to the home page
@@ -42,6 +54,7 @@ const Result = () => {
     
     setPrompt(storedPrompt);
     setImageUrl(storedImage);
+    setUsedModel(storedModel);
   }, [navigate]);
 
   const handleSaveToHistory = (editedPrompt: string) => {
@@ -77,6 +90,7 @@ const Result = () => {
       imageUrl,
       prompt: editedPrompt,
       timestamp: new Date().toISOString(),
+      model: usedModel,
     };
     
     // Add to history and save back to local storage
@@ -113,7 +127,7 @@ const Result = () => {
               <div className="flex flex-col items-center justify-center gap-4 text-center">
                 <h3 className="font-medium">API Key Required</h3>
                 <p className="text-sm text-muted-foreground">
-                  Please set your Gemini API key to use this app
+                  Please set your API key to use this app
                 </p>
                 <Button onClick={() => navigate("/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
@@ -144,9 +158,11 @@ const Result = () => {
           
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-2">Generated Prompt</h1>
-            <p className="text-muted-foreground">
-              Edit the prompt if needed, then save it to your history
-            </p>
+            <div className="flex justify-center">
+              <Badge variant="outline" className="mt-1">
+                Generated with {usedModel === "gemini" ? "Google Gemini" : "Meta Llama 3"}
+              </Badge>
+            </div>
           </div>
           
           {imageUrl && (

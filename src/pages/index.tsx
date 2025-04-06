@@ -5,7 +5,8 @@ import { ImagePicker } from "@/components/ImagePicker";
 import { LoadingIndicator } from "@/components/LoadingIndicator";
 import { Button } from "@/components/ui/button";
 import { Wand2, Settings } from "lucide-react";
-import { mockGeneratePromptFromImage } from "@/lib/gemini";
+import { mockGeneratePromptFromImage as mockGeminiGenerate } from "@/lib/gemini";
+import { mockGeneratePromptFromImage as mockLlamaGenerate } from "@/lib/llama";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -13,6 +14,7 @@ const Index = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(true); // Default to true for mock functionality
+  const [selectedModel, setSelectedModel] = useState<"gemini" | "llama3">("gemini");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -22,7 +24,16 @@ const Index = () => {
     if (storedSettings) {
       try {
         const parsedSettings = JSON.parse(storedSettings);
-        setApiKeySet(!!parsedSettings.apiKey);
+        setSelectedModel(parsedSettings.model || "gemini");
+        
+        // Check if the required API key for the selected model is set
+        if (parsedSettings.model === "gemini") {
+          setApiKeySet(!!parsedSettings.apiKey);
+        } else if (parsedSettings.model === "llama3") {
+          setApiKeySet(!!parsedSettings.llama3ApiKey);
+        } else {
+          setApiKeySet(!!parsedSettings.apiKey); // Default to Gemini
+        }
       } catch (error) {
         console.error("Error parsing settings:", error);
         setApiKeySet(false);
@@ -40,7 +51,7 @@ const Index = () => {
     if (!apiKeySet) {
       toast({
         title: "API Key Required",
-        description: "Please set your Gemini API key in settings first",
+        description: `Please set your ${selectedModel === "gemini" ? "Gemini" : "Llama 3"} API key in settings first`,
         variant: "destructive",
       });
       navigate("/settings");
@@ -59,9 +70,15 @@ const Index = () => {
     setIsProcessing(true);
 
     try {
-      // In a real app, we would use the actual Gemini API
-      // For this demo, we're using a mock function
-      const response = await mockGeneratePromptFromImage(selectedImage);
+      // In a real app, we would use the actual API
+      // For this demo, we're using mock functions
+      let response;
+      
+      if (selectedModel === "gemini") {
+        response = await mockGeminiGenerate(selectedImage);
+      } else {
+        response = await mockLlamaGenerate(selectedImage);
+      }
       
       if (response.error) {
         throw new Error(response.error);
@@ -70,6 +87,7 @@ const Index = () => {
       // Store the result in session storage to pass to the result page
       sessionStorage.setItem("generatedPrompt", response.text);
       sessionStorage.setItem("selectedImage", selectedImage);
+      sessionStorage.setItem("usedModel", selectedModel);
       
       // Navigate to the result page
       navigate("/result");
@@ -95,6 +113,9 @@ const Index = () => {
             <p className="text-muted-foreground">
               Upload an image and get an AI-generated prompt to create similar images
             </p>
+            <p className="text-sm text-primary mt-1">
+              Using {selectedModel === "gemini" ? "Google Gemini" : "Meta Llama 3"} model
+            </p>
           </div>
           
           {!apiKeySet && (
@@ -104,7 +125,7 @@ const Index = () => {
                   <div className="text-center sm:text-left">
                     <h3 className="font-medium">API Key Required</h3>
                     <p className="text-sm text-muted-foreground">
-                      Please set your Gemini API key to use this app
+                      Please set your {selectedModel === "gemini" ? "Gemini" : "Llama 3"} API key to use this app
                     </p>
                   </div>
                   <Button onClick={() => navigate("/settings")} className="whitespace-nowrap">
@@ -119,7 +140,7 @@ const Index = () => {
           <ImagePicker onImageSelected={handleImageSelected} />
           
           {isProcessing ? (
-            <LoadingIndicator text="Analyzing image and generating prompt..." />
+            <LoadingIndicator text={`Analyzing image with ${selectedModel === "gemini" ? "Google Gemini" : "Meta Llama 3"}...`} />
           ) : (
             <Button 
               onClick={handleGeneratePrompt} 

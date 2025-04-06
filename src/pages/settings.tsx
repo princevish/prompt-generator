@@ -8,12 +8,15 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Save, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Settings {
   apiKey: string;
   saveHistory: boolean;
   darkMode: boolean;
   maxHistoryItems: number;
+  model: "gemini" | "llama3";
+  llama3ApiKey?: string;
 }
 
 const defaultSettings: Settings = {
@@ -21,6 +24,8 @@ const defaultSettings: Settings = {
   saveHistory: true,
   darkMode: false,
   maxHistoryItems: 50,
+  model: "gemini",
+  llama3ApiKey: "",
 };
 
 const Settings = () => {
@@ -35,7 +40,13 @@ const Settings = () => {
       try {
         const parsedSettings = JSON.parse(storedSettings);
         setSettings({ ...defaultSettings, ...parsedSettings });
-        setApiKeyRequired(!parsedSettings.apiKey);
+        
+        // Check if the required API key for the selected model is missing
+        if (parsedSettings.model === "gemini") {
+          setApiKeyRequired(!parsedSettings.apiKey);
+        } else if (parsedSettings.model === "llama3") {
+          setApiKeyRequired(!parsedSettings.llama3ApiKey);
+        }
       } catch (error) {
         console.error("Error parsing settings:", error);
         setApiKeyRequired(true);
@@ -59,7 +70,10 @@ const Settings = () => {
         [name]: value,
       });
       
-      if (name === "apiKey") {
+      // Update API key requirement based on model selection
+      if (name === "apiKey" && settings.model === "gemini") {
+        setApiKeyRequired(!value);
+      } else if (name === "llama3ApiKey" && settings.model === "llama3") {
         setApiKeyRequired(!value);
       }
     }
@@ -70,6 +84,20 @@ const Settings = () => {
       ...settings,
       [name]: checked,
     });
+  };
+
+  const handleModelChange = (value: "gemini" | "llama3") => {
+    setSettings({
+      ...settings,
+      model: value,
+    });
+    
+    // Update API key requirement based on model selection
+    if (value === "gemini") {
+      setApiKeyRequired(!settings.apiKey);
+    } else if (value === "llama3") {
+      setApiKeyRequired(!settings.llama3ApiKey);
+    }
   };
 
   const handleSave = () => {
@@ -103,33 +131,68 @@ const Settings = () => {
           
           <div className="space-y-6">
             <div className="space-y-4">
-              <h2 className="text-xl font-medium">API Configuration</h2>
+              <h2 className="text-xl font-medium">AI Model Configuration</h2>
+              
+              <RadioGroup 
+                value={settings.model} 
+                onValueChange={(value) => handleModelChange(value as "gemini" | "llama3")}
+                className="space-y-3"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="gemini" id="gemini" />
+                  <Label htmlFor="gemini">Google Gemini</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="llama3" id="llama3" />
+                  <Label htmlFor="llama3">Meta Llama 3</Label>
+                </div>
+              </RadioGroup>
               
               {apiKeyRequired && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Required</AlertTitle>
                   <AlertDescription>
-                    A Gemini API key is required to use this app. Without it, you won't be able to generate prompts from images.
+                    An API key is required for the selected model to use this app. Without it, you won't be able to generate prompts from images.
                   </AlertDescription>
                 </Alert>
               )}
               
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">Gemini API Key</Label>
-                <Input
-                  id="apiKey"
-                  name="apiKey"
-                  type="password"
-                  value={settings.apiKey}
-                  onChange={handleChange}
-                  placeholder="Enter your Gemini API key"
-                  className={apiKeyRequired ? "border-destructive" : ""}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Get your API key from the <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google AI Studio</a>
-                </p>
-              </div>
+              {settings.model === "gemini" && (
+                <div className="space-y-2">
+                  <Label htmlFor="apiKey">Gemini API Key</Label>
+                  <Input
+                    id="apiKey"
+                    name="apiKey"
+                    type="password"
+                    value={settings.apiKey}
+                    onChange={handleChange}
+                    placeholder="Enter your Gemini API key"
+                    className={settings.model === "gemini" && apiKeyRequired ? "border-destructive" : ""}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Get your API key from the <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google AI Studio</a>
+                  </p>
+                </div>
+              )}
+              
+              {settings.model === "llama3" && (
+                <div className="space-y-2">
+                  <Label htmlFor="llama3ApiKey">Llama 3 API Key</Label>
+                  <Input
+                    id="llama3ApiKey"
+                    name="llama3ApiKey"
+                    type="password"
+                    value={settings.llama3ApiKey || ""}
+                    onChange={handleChange}
+                    placeholder="Enter your Llama 3 API key"
+                    className={settings.model === "llama3" && apiKeyRequired ? "border-destructive" : ""}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Get your API key from the <a href="https://ai.meta.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Meta AI Platform</a>
+                  </p>
+                </div>
+              )}
             </div>
             
             <Separator />

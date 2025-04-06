@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export interface HistoryItemData {
   id: string;
@@ -11,6 +12,7 @@ export interface HistoryItemData {
   prompt: string;
   timestamp: Date;
   isFavorite?: boolean;
+  model?: "gemini" | "llama3";
 }
 
 interface HistoryItemProps {
@@ -58,7 +60,14 @@ export function HistoryItem({ item, onDelete }: HistoryItemProps) {
             />
           </div>
           <div className="flex-grow min-w-0">
-            <p className="text-sm text-muted-foreground mb-1">{formattedDate}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-sm text-muted-foreground">{formattedDate}</p>
+              {item.model && (
+                <Badge variant="outline" className="text-xs">
+                  {item.model === "gemini" ? "Gemini" : "Llama 3"}
+                </Badge>
+              )}
+            </div>
             <p className="text-sm truncate">
               {expanded ? item.prompt : `${item.prompt.substring(0, 60)}${item.prompt.length > 60 ? '...' : ''}`}
             </p>
